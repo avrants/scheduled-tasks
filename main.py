@@ -1,38 +1,40 @@
-# To run and test the code you need to update 4 places:
-# 1. Change MY_EMAIL/MY_PASSWORD to your own details.
-# 2. Go to your email provider and make it allow less secure apps.
-# 3. Update the SMTP ADDRESS to match your email provider.
-# 4. Update birthdays.csv to contain today's month and day.
-# See the solution video in the 100 Days of Python Course for explainations.
-
-
-from datetime import datetime
-import pandas
-import random
-import smtplib
 import os
+import smtplib
+import random
+import datetime
+import pandas as pd
 
-# import os and use it to get the Github repository secrets
-MY_EMAIL = os.environ.get("MY_EMAIL")
-MY_PASSWORD = os.environ.get("MY_PASSWORD")
+SEND_FROM_EMAIL = os.environ.get("MY_EMAIL")
+SEND_FROM_PASSWORD = os.environ.get("MY_PASSWORD")
 
-today = datetime.now()
-today_tuple = (today.month, today.day)
+today = datetime.datetime.today()
+df_birthdays = pd.read_csv('birthdays.csv')
 
-data = pandas.read_csv("birthdays.csv")
-birthdays_dict = {(data_row["month"], data_row["day"])                  : data_row for (index, data_row) in data.iterrows()}
-if today_tuple in birthdays_dict:
-    birthday_person = birthdays_dict[today_tuple]
-    file_path = f"letter_templates/letter_{random.randint(1, 3)}.txt"
-    with open(file_path) as letter_file:
-        contents = letter_file.read()
-        contents = contents.replace("[NAME]", birthday_person["name"])
-
-    with smtplib.SMTP("YOUR EMAIL PROVIDER SMTP SERVER ADDRESS") as connection:
+# Function Send email
+def send_birthday_wish(to_email, subject, body):
+    with smtplib.SMTP('smtp.gmail.com', 587) as connection:
         connection.starttls()
-        connection.login(MY_EMAIL, MY_PASSWORD)
+        connection.login(user=SEND_FROM_EMAIL, password=SEND_FROM_PASSWORD)
         connection.sendmail(
-            from_addr=MY_EMAIL,
-            to_addrs=birthday_person["email"],
-            msg=f"Subject:Happy Birthday!\n\n{contents}"
+            from_addr=SEND_FROM_EMAIL,
+            to_addrs=to_email,
+            msg=f"Subject: {subject}\n\n{body}"
         )
+
+# Function read rand letter
+def read_random_letter():
+    with open(f"letter_templates/letter_{random.randint(1, 3)}.txt", "r") as f:
+        rand_letter = f.read()
+    return rand_letter
+
+# Check for birthdays today
+for index, row in df_birthdays.iterrows():
+    if row['month'] == today.month and row['day'] == today.day:
+        letter = read_random_letter()
+        message = letter.replace("[NAME]", row['name'])
+        send_birthday_wish(to_email=row['email'], subject="Happy Birthday!", body=message)
+
+
+
+
+
