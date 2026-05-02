@@ -4,8 +4,8 @@ import random
 import datetime
 import pandas as pd
 
-SEND_FROM_EMAIL = os.environ.get("MY_EMAIL")
-SEND_FROM_PASSWORD = os.environ.get("MY_PASSWORD")
+SEND_FROM_EMAIL = os.environ.get("SEND_FROM_EMAIL")
+SEND_FROM_PASSWORD = os.environ.get("SEND_FROM_PASSWORD")
 
 today = datetime.datetime.today()
 df_birthdays = pd.read_csv('birthdays.csv')
