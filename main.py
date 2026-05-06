@@ -1,38 +1,43 @@
 import os
-import smtplib
-import random
-import datetime
-import pandas as pd
+import requests
+from twilio.rest import Client
+import pprint
 
-SEND_FROM_EMAIL = os.environ.get("SEND_FROM_EMAIL")
-SEND_FROM_PASSWORD = os.environ.get("SEND_FROM_PASSWORD")
+API_END = "https://api.openweathermap.org"
+API_END_DATA = "/data/2.5/forecast"
+API_KEY = os.environ.get("TWILIO_API_KEY")
+account_sid = os.environ.get("TWILIO_ACCOUNT_SID")
+auth_token = os.environ.get("TWILIO_AUTH_TOKEN")
+from_phone = "+13362976958"
+to_phone = "+359898930153"
 
-today = datetime.datetime.today()
-df_birthdays = pd.read_csv('birthdays.csv')
+client = Client(account_sid, auth_token)
 
-# Function Send email
-def send_birthday_wish(to_email, subject, body):
-    with smtplib.SMTP('smtp.gmail.com', 587) as connection:
-        connection.starttls()
-        connection.login(user=SEND_FROM_EMAIL, password=SEND_FROM_PASSWORD)
-        connection.sendmail(
-            from_addr=SEND_FROM_EMAIL,
-            to_addrs=to_email,
-            msg=f"Subject: {subject}\n\n{body}"
+params = {
+    "lat": 45.812031,
+    "lon": 9.085620,
+    "units": "metric",
+    "cnt": 8,
+    "appid": API_KEY,
+}
+
+response = requests.get(API_END + API_END_DATA, params=params)
+response.raise_for_status()
+
+weather_data = response.json()
+
+for forecast in weather_data["list"]:
+    if forecast["weather"][0]["id"] < 700:
+        #print(f"It is raining or it is going to rain at {forecast["dt_txt"]}.")
+        message = client.messages.create(
+            body=f"It is raining or it is going to rain at {forecast["dt_txt"]}.",
+            from_=from_phone,
+            to=to_phone,
         )
+        print(message.body)
+        break
 
-# Function read rand letter
-def read_random_letter():
-    with open(f"letter_templates/letter_{random.randint(1, 3)}.txt", "r") as f:
-        rand_letter = f.read()
-    return rand_letter
-
-# Check for birthdays today
-for index, row in df_birthdays.iterrows():
-    if row['month'] == today.month and row['day'] == today.day:
-        letter = read_random_letter()
-        message = letter.replace("[NAME]", row['name'])
-        send_birthday_wish(to_email=row['email'], subject="Happy Birthday!", body=message)
+###################################################################
 
 
 
